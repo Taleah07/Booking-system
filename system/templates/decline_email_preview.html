@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Decline Email</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f4f6f8; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        form { display: flex; flex-direction: column; gap: 15px; }
+        label { font-weight: bold; }
+        input, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; }
+        textarea { min-height: 220px; resize: vertical; }
+        .actions { display: flex; gap: 10px; margin-top: 10px; }
+        button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; }
+        .send-btn { background: #dc3545; color: white; }
+        .cancel-btn { background: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Edit {{ booking_type|title }} decline email</h2>
+        <p><strong>Booking:</strong> {{ booking.full_name }} - {{ booking.slot.training_title|default:'Training' }}</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div>
+                <label for="subject">Subject</label>
+                <input id="subject" type="text" name="subject" value="{{ subject }}">
+            </div>
+
+            <div>
+                <label for="message">Email message</label>
+                <textarea id="message" name="message">{{ message }}</textarea>
+            </div>
+
+            <div class="actions">
+                <button class="send-btn" type="submit">Send decline email</button>
+                <a href="{% url 'bookings_list' %}"><button type="button" class="cancel-btn">Cancel</button></a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bookings</title>
+    <style>
+        nav ul { list-style: none; padding: 0; display: flex; gap: 15px; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f4f4f4; }
+        .status-update {
+            opacity: 0;
+            animation: fadeInStatus 0.5s ease forwards;
+        }
+        @keyframes fadeInStatus {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<nav>
+    <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'technical' %}">Technical</a></li>
+        <li><a href="{% url 'legislative' %}">Legislative</a></li>
+        <li><a href="{% url 'operator' %}">Operator</a></li>
+         {% if user.is_staff %}
+            <li><a href="{% url 'bookings_list' %}">Bookings</a></li>
+        {% endif %}
+        <li><a href="{% url 'contact' %}">Contact Us</a></li>
+    </ul>
+</nav>
+    <h2>Bookings</h2>
+    <p>
+        <a href="{% url 'export_technical' %}">Export Technical to Excel</a>
+        <a href="{% url 'export_legislative' %}">Export Legislative to Excel</a>
+    </p>
+    <h2>Technical Bookings</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Created</th>
+                <th>Training</th>
+                <th>Week</th>
+                <th>Venue</th>
+                <th>Instructor</th>
+                <th>Full name</th>
+                <th>Surname</th>
+                <th>ID number</th>
+                <th>Admin Email</th>
+                <th>Candidate Email</th>
+                <th>Company</th>
+                <th>Company number</th>
+                <th>Phone</th>
+                <th>Company Name</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in technical_bookings %}
+            <tr>
+                <td>{{ b.created_at }}</td>
+                <td>{{ b.slot.training_title }}</td>
+                <td>{{ b.slot.week.display_name }}</td>
+                <td>{{ b.slot.venue_info }}</td>
+                <td>{{ b.slot.instructor.name }}</td>
+                <td>{{ b.full_name }}</td>
+                <td>{{ b.surname }}</td>
+                <td>{{ b.id_number }}</td>
+                <td>{{ b.admin_email }}</td>
+                <td>{{ b.candidate_email }}</td>
+                <td>{{ b.company }}</td>
+                <td>{{ b.company_number }}</td>
+                <td>{{ b.phone }}</td>
+                <td>{{ b.company_name }}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        {% if b.is_cancelled %}
+                            <span class="text-secondary font-weight-bold">Cancelled</span>
+                            <form action="{% url 'delete_booking' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="delete" onsubmit="return confirm('Are you sure you want to permanently delete this cancelled booking?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        {% elif b.is_declined %}
+                            <span class="text-danger font-weight-bold">Declined</span>
+                            <form action="{% url 'delete_booking' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="delete" onsubmit="return confirm('Are you sure you want to permanently delete this declined booking?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        {% elif b.is_accepted %}
+                            <span class="text-success font-weight-bold">Accepted</span>
+                            <form action="{% url 'cancel_booking' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="cancel">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Cancel Booking</button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'accept_booking' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="accept">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                            </form>
+                            <form action="{% url 'preview_decline_booking' b.id %}" method = "GET" style="display:inline;" class="booking-action-form" data-action-type="decline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </td>        
+            {% empty %}
+            <tr><td colspan="12">No bookings yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <h2>Legislative Bookings</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Created</th>
+                <th>Training</th>
+                <th>Week</th>
+                <th>Day/s</th>
+                <th>Instructor</th>
+                <th>Full name</th>
+                <th>Surname</th>
+                <th>ID number</th>
+                <th>Admin Email</th>
+                <th>Supervisor Email</th>
+                <th>Company number</th>
+                <th>Phone</th>
+                <th>Department</th>
+                <th>ID PDF</th>
+                <th>Education PDF</th>
+                <th>Medical PDF</th>
+                <th>Driver's License PDF</th>
+                <th>Previous License PDF</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in legislative_bookings %}
+            <tr>
+                <td>{{ b.created_at }}</td>
+                <td>{{ b.slot.training_title }}</td>
+                <td>{{ b.slot.week.display_name }}</td>
+                <td>{{ b.slot.venue_info }}</td>
+                <td>{{ b.slot.instructor.name }}</td>
+                <td>{{ b.full_name }}</td>
+                <td>{{ b.surname }}</td>
+                <td>{{ b.id_number }}</td>
+                <td>{{ b.admin_email }}</td>
+                <td>{{ b.supervisor_email }}</td>
+                <td>{{ b.company_number }}</td>
+                <td>{{ b.phone }}</td>
+                <td>{{ b.department }}</td>
+                <td>
+                    {% if b.id_pdf %}
+                        <a href="{{ b.id_pdf.url }}" target="blank">Open ID</a>
+                    {% else %}
+                        No ID 
+                    {% endif %}
+                </td>
+                <td>
+                    {% if b.education_pdf %}
+                        <a href="{{ b.education_pdf.url }}" target="blank">Open Education</a>
+                    {% else %}
+                        No Education PDF
+                    {% endif %}
+                </td>
+                <td>
+                    {% if b.medical_pdf %}
+                        <a href="{{ b.medical_pdf.url }}" target="blank">Open Medical</a>
+                    {% else %}
+                        No Medical PDF
+                    {% endif %}
+                </td>
+                <td>
+                    {% if b.drivers_license_pdf %}
+                    <a href = "{{ b.drivers_license_pdf.url }}" target = "blank">Open Driver's License</a>
+                    {% else %}
+                        No Drivers License PDF
+                    {% endif %}
+                </td>
+                <td>
+                    {% if b.previous_license_pdf %}
+                    <a href = "{{ b.previous_license_pdf.url }}" target = "blank">Open Previous License</a>
+                    {% else %}
+                        No Previous License PDF
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        {% if b.is_cancelled %}
+                            <span class="text-secondary font-weight-bold">Cancelled</span>
+                            <form action="{% url 'delete_booking_legislative' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="delete" onsubmit="return confirm('Are you sure you want to permanently delete this cancelled booking?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        {% elif b.is_declined %}
+                            <span class="text-danger font-weight-bold">Declined</span>
+                            <form action="{% url 'delete_booking_legislative' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="delete" onsubmit="return confirm('Are you sure you want to permanently delete this declined booking?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        {% elif b.is_accepted %}
+                            <span class="text-success font-weight-bold">Accepted</span>
+                            <form action="{% url 'cancel_booking_legislative' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="cancel">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Cancel Booking</button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'accept_booking_legislative' b.id %}" method = "POST" style="display:inline;" class="booking-action-form" data-action-type="accept">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                            </form>
+                            <form action="{% url 'preview_decline_booking_legislative' b.id %}" method = "GET" style="display:inline;" class="booking-action-form" data-action-type="decline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="12">No bookings yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+<h2>Operator Bookings</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Created</th>
+                <th>Branch</th>
+                <th>Full name</th>
+                <th>Surname</th>
+                <th>Admin Email</th>
+                <th>Company</th>
+                <th>Company Name</th>
+                <th>Machine Name</th>
+                <th>Course Type</th>
+                <th>Number Of Deligates</th>
+                <th>Location</th>
+                <th>Location Name</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in operator_bookings %}
+            <tr>
+                <td>{{ b.created_at }}</td>
+                <td>{{ b.branch }}</td>
+                <td>{{ b.full_name }}</td>
+                <td>{{ b.surname }}</td>
+                <td>{{ b.admin_email }}</td>
+                <td>{{ b.company }}</td>
+                <td>{{ b.company_name }}</td>
+                <td>{{ b.machine_name }}</td>
+                <td>{{ b.course_type }}</td>
+                <td>{{ b.number_of_deligates }}</td>
+                <td>{{ b.location }}</td>
+                <td>
+                    {% if b.location_name %}
+                        {{ b.location_name }}
+                    {% else %}
+                        No Location
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not b.is_done %}
+                        <form action="{% url 'mark_operator_done' b.id %}" method="POST" style="display: inline;" class="operator-action-form" data-operator-action="done">
+                            {% csrf_token %}
+                            <button type="submit" style="background-color: #28a745; color:white; border: none; padding:5px 10px; cursor: pointer; border-radius: 4px;">
+                                Mark Done
+                            </button>
+                        </form>
+                    {% else %}
+                        <strong style="color: #28a745;">Done</strong>
+                        <form action="{% url 'delete_operator_booking' b.id %}" method="POST" style="display: inline;" class="operator-action-form" data-operator-action="delete" onsubmit="return confirm('Are you sure you want to permanently delete this completed booking?');">
+                            {% csrf_token %}
+                            <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Delete</button>
+                        </form>
+                    {% endif %}
+                </td>    
+            </tr>
+            {% empty %}
+            <tr><td colspan="12">No bookings yet.</td></tr>
+            {% endfor %}  
+        </tbody>
+    </table>
+    <script>
+        document.addEventListener('submit', function (event) {
+            const form = event.target.closest('.operator-action-form');
+            if (!form) {
+                return;
+            }
+
+            event.preventDefault();
+            const row = form.closest('tr');
+            const actionCell = row ? row.querySelector('td:last-child') : null;
+            const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+
+            if (form.dataset.operatorAction === 'delete') {
+                row.remove();
+            }
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new FormData(form),
+                credentials: 'same-origin'
+            }).then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Operator action failed');
+                }
+
+                if (form.dataset.operatorAction === 'delete') {
+                    return;
+                }
+
+                actionCell.innerHTML = `
+                    <strong style="color: #28a745;">Done</strong>
+                    <form action="${form.action.replace('/done/', '/delete/')}" method="POST" style="display: inline;" class="operator-action-form" data-operator-action="delete" onsubmit="return confirm('Are you sure you want to permanently delete this completed booking?');">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">Delete</button>
+                    </form>
+                `;
+            }).catch(function () {
+                window.location.reload();
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const forms = document.querySelectorAll('.booking-action-form');
+
+            forms.forEach(function (form) {
+                const actionType = form.dataset.actionType;
+                if (actionType === 'decline') {
+                    return;
+                }
+
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    const row = form.closest('tr');
+                    const actionCell = row ? row.querySelector('td:last-child') : null;
+                    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: new FormData(form),
+                        credentials: 'same-origin'
+                    }).then(function (response) {
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        if (!actionCell) {
+                            return;
+                        }
+
+                        let html = '<span class="text-secondary font-weight-bold status-update">Updated</span>';
+
+                        if (actionType === 'accept') {
+                            const cancelUrl = form.action.replace(/accept_booking(?:_legislative)?/, function (match) {
+                                return match === 'accept_booking' ? 'cancel_booking' : 'cancel_booking_legislative';
+                            });
+                            html = `
+                                <span class="text-success font-weight-bold status-update">Accepted</span>
+                                <form action="${cancelUrl}" method="POST" style="display:inline;" class="booking-action-form" data-action-type="cancel">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Cancel Booking</button>
+                                </form>
+                            `;
+                        } else if (actionType === 'decline') {
+                            const deleteUrl = form.action.replace(/decline_booking(?:_legislative)?/, function (match) {
+                                return match === 'decline_booking' ? 'delete_booking' : 'delete_booking_legislative';
+                            });
+                            html = `
+                                <span class="text-danger font-weight-bold status-update">Declined</span>
+                                <form action="${deleteUrl}" method="POST" style="display:inline;" class="booking-action-form" data-action-type="delete" onsubmit="return confirm('Are you sure you want to permanently delete this declined booking?');">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
+                            `;
+                        } else if (actionType === 'cancel') {
+                            const deleteUrl = form.action.replace(/cancel_booking(?:_legislative)?/, function (match) {
+                                return match === 'cancel_booking' ? 'delete_booking' : 'delete_booking_legislative';
+                            });
+                            html = `
+                                <span class="text-secondary font-weight-bold status-update">Cancelled</span>
+                                <form action="${deleteUrl}" method="POST" style="display:inline;" class="booking-action-form" data-action-type="delete" onsubmit="return confirm('Are you sure you want to permanently delete this cancelled booking?');">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                </form>
+                            `;
+                        }
+
+                        actionCell.innerHTML = html;
+                    }).catch(function () {
+                        form.submit();
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

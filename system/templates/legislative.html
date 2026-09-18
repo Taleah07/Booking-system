@@ -1,0 +1,205 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Legislative Training Calendar</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f8; }
+        nav ul { list-style: none; padding: 0; display: flex; gap: 15px; }
+        .container { background: white; padding: 20px; border-radius: 8px; }
+        .calendar-table th { background: #343a40; color: white; text-align: center; padding: 10px; }
+        .week-col { background: #f8f9fa; font-weight: bold; width: 180px; padding: 10px 8px 12px; vertical-align: top; min-height: 120px; height: 100%; }
+        .week-col.booking-closed, tr.booking-closed td { background: #e5e7eb; color: #6b7280; }
+        .week-label-link { color: #1f2937; text-decoration: none; line-height: 1.3; display: block; width: 100%; margin-bottom: 6px; }
+        .week-label-link:hover { text-decoration: underline; }
+        .cell-slot { min-height: 110px; padding: 10px; vertical-align: top; border: 1px solid #dee2e6; position: relative; }
+        .cell-slot.compact-slot { min-height: 0; padding: 6px; }
+        .cell-slot.compact-slot .slot-title { margin-bottom: 2px; font-size: 13px; }
+        .cell-slot.compact-slot .sub-text { margin-bottom: 2px; font-size: 11px; }
+        .cell-slot.with-edit:hover { background: #f5f5f5; }
+        .slot-title { font-weight: bold; display: block; margin-bottom: 5px; }
+        .sub-text { display: block; font-size: 12px; color: #555; margin-bottom: 6px; }
+        .book-link { display: inline-block; background: #0d6efd; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 12px; }
+        .book-link:hover { background: #0b5ed7; }
+        .edit-links { display: none; position: absolute; top: 2px; right: 2px; gap: 5px; background: white; padding: 5px; border-radius: 4px; z-index: 10; }
+        .edit-links a { font-size: 10px; padding: 3px 6px; text-decoration: none; border-radius: 3px; }
+        .edit-links .edit-btn { background: #0d6efd; color: white; }
+        .edit-links .delete-btn { background: #dc3545; color: white; }
+        .week-col > .edit-links {
+            position: static;
+            display: none;
+            width: fit-content;
+            flex-direction: row;
+            align-items: center;
+            gap: 4px;
+            z-index: 1;
+            margin-top: 6px;
+            justify-content: flex-start;
+            background: rgba(255,255,255,0.8);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .week-col > .edit-links a {
+            display: inline-block;
+            width: auto;
+            text-align: center;
+            font-size: 10px;
+            padding: 3px 6px;
+            line-height: 1.2;
+            border-radius: 3px;
+        }
+        .header-controls { display: none; gap: 5px; justify-content: center; }
+        .header-controls a { font-size: 11px; padding: 3px 6px; text-decoration: none; border-radius: 3px; display: inline-block; }
+        .header-controls .edit-btn { background: #0d6efd; color: white; }
+        .header-controls .edit-btn:hover { background: #0b5ed7; }
+        .header-controls .delete-btn { background: #dc3545; color: white; }
+        .header-controls .delete-btn:hover { background: #c82333; }
+        .edit-controls { display: inline-block !important;}
+    </style>
+</head>
+<body>
+<nav>
+    <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'technical' %}">Technical</a></li>
+        <li><a href="{% url 'legislative' %}">Legislative</a></li>
+        <li><a href="{% url 'operator' %}">Operator</a></li>
+         {% if user.is_staff %}
+            <li><a href="{% url 'bookings_list' %}">Bookings</a></li>
+        {% endif %}
+        <li><a href="{% url 'contact' %}">Contact Us</a></li>
+    </ul>
+</nav>
+<div class="container">
+    {% if user.is_staff %}
+        <button id="toggleEditBtn" class="btn btn-warning" onclick="toggleEditMode()">
+            Enable Editing
+        </button>
+    {% endif %}
+    <div>
+        <a href="{% static 'pdf/help_guide_legislative.pdf' %}" target="_blank" class="btn btn-info" style="margin-left: 10px;">Help Guide</a>
+    </div>
+    <h2>Legislative Training Calendar</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <p style="color: green;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+    <div class="table-responsive">
+        <table class="calendar-table" border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Week
+                        {% if user.is_staff %}
+                            <div class="header-controls" style="display: none;">
+                                <a href="{% url 'add_legislative_week' %}" class="edit-btn">Add</a>
+                            </div>
+                        {% endif %}
+                    </th>
+                    {% for instructor in legislative_instructors %}
+                        <th>{{ instructor.name }}
+                            {% if user.is_staff %}
+                                <div class="header-controls">
+                                    <a href="{% url 'edit_instructor_legislative' instructor.id %}" class="edit-btn">Edit</a>
+                                    <a href="{% url 'delete_instructor_legislative' instructor.id %}" class="delete-btn">Delete</a>
+                                </div>
+                            {% endif %}
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in legislative_calendar_rows %}
+                    <tr class="{% if row.booking_closed and not user.is_staff %}booking-closed{% endif %}">
+                        <td class="week-col {% if row.booking_closed and not user.is_staff %}booking-closed{% endif %}">
+                            {% if user.is_staff %}
+                                <a href="{% url 'edit_week_legislative' row.week.id %}" class="week-label-link">{{ row.week.display_name }}</a>
+                            {% else %}
+                                <span>{{ row.week.display_name }}</span>
+                            {% endif %}
+                            {% if user.is_staff %}
+                                <div class="edit-links">
+                                    <a href="{% url 'edit_week_legislative' row.week.id %}" class="edit-btn">Edit</a>
+                                    <a href="{% url 'delete_week_legislative' row.week.id %}" class="delete-btn">Delete</a>
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% for item in row.cells %}
+                            <td style= "vertical-align: top;">
+                                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                                    {% for slot in item.slots %}
+                                        <div class="cell-slot {% if user.is_staff %}with-edit{% endif %}{% if row.booking_closed and not user.is_staff %} compact-slot{% endif %}">
+                                            <span class="slot-title">{{ slot.training_title }}</span>
+                                            {% if slot.venue_info %}
+                                                <span class="sub-text">{{ slot.venue_info }}</span>
+                                            {% endif %}
+                                            {% if not row.booking_closed or user.is_staff %}
+                                                <span class="sub-text">Seats left: {{ slot.seats_remaining }}/{{ slot.capacity }}</span>
+                                            {% endif %}
+                                            {% if not row.booking_closed or user.is_staff %}
+                                                <a class="book-link" href="{% url 'book_training_legislative' slot.id %}">Book this training</a>
+                                            {% endif %}
+                                            {% if user.is_staff %}
+                                                <div class="edit-links">
+                                                    <a href="{% url 'edit_legislative_slot' slot.id %}" class="edit-btn">Edit</a>
+                                                    <a href="{% url 'delete_legislative_slot' slot.id %}" class="delete-btn">Delete</a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    {% if user.is_staff %}
+                                        <div class="header-controls">
+                                            <a href="{% url 'add_legislative_slot' %}?week={{ row.week.id }}&instructor={{ item.instructor.id }}" class="add-btn">Add</a>
+                                        </div>
+                                    {% endif %}
+                                </div>   
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    function setEditMode(enabled) {
+        const editLinks = document.querySelectorAll('.edit-links');
+        const headerControls = document.querySelectorAll('.header-controls');
+        const weekEditDivs = document.querySelectorAll('td.week-col > .edit-links');
+        const button = document.getElementById('toggleEditBtn');
+
+        editLinks.forEach(element => {
+            element.style.setProperty('display', enabled ? 'flex' : 'none', 'important');
+        });
+
+        headerControls.forEach(element => {
+            element.style.setProperty('display', enabled ? 'flex' : 'none', 'important');
+        });
+
+        weekEditDivs.forEach(element => {
+            element.style.setProperty('display', enabled ? 'flex' : 'none', 'important');
+        });
+
+        if (button) {
+            button.innerText = enabled ? 'Disable Editing' : 'Enable Editing';
+            button.classList.toggle('btn-warning', !enabled);
+            button.classList.toggle('btn-secondary', enabled);
+            localStorage.setItem('legislativeEditMode', enabled ? 'on' : 'off');
+        }
+    }
+
+    function toggleEditMode() {
+        if (!document.getElementById('toggleEditBtn')) return;
+        const isEnabled = localStorage.getItem('legislativeEditMode') === 'on';
+        setEditMode(!isEnabled);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!document.getElementById('toggleEditBtn')) return;
+        const isEnabled = localStorage.getItem('legislativeEditMode') === 'on';
+        setEditMode(isEnabled);
+    });
+</script>
+</body>
+</html>

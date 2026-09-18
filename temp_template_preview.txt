@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Technical Training Calendar</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f8; }
+        nav ul { list-style: none; padding: 0; display: flex; gap: 15px; }
+        .container { background: white; padding: 20px; border-radius: 8px; }
+        .calendar-table th { background: #343a40; color: white; text-align: center; padding: 10px; }
+        .week-col { background: #f8f9fa; font-weight: bold; width: 180px; }
+        .cell-slot { min-height: 110px; padding: 10px; vertical-align: top; border: 1px solid #dee2e6; position: relative; }
+        .cell-slot.with-edit:hover { background: #f5f5f5; }
+        .slot-title { font-weight: bold; display: block; margin-bottom: 5px; }
+        .sub-text { display: block; font-size: 12px; color: #555; margin-bottom: 6px; }
+        .book-link { display: inline-block; background: #0d6efd; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 12px; }
+        .book-link:hover { background: #0b5ed7; }
+        .edit-links { display: none; position: absolute; top: 2px; right: 2px; gap: 5px; background: white; padding: 5px; border-radius: 4px; z-index: 10; }
+        .edit-links a { font-size: 10px; padding: 3px 6px; text-decoration: none; border-radius: 3px; }
+        .edit-links .edit-btn { background: #0d6efd; color: white; }
+        .edit-links .delete-btn { background: #dc3545; color: white; }
+        .header-controls { display: none; gap: 5px; justify-content: center; }
+        .header-controls a { font-size: 11px; padding: 3px 6px; text-decoration: none; border-radius: 3px; display: inline-block; }
+        .header-controls .edit-btn { background: #0d6efd; color: white; }
+        .header-controls .edit-btn:hover { background: #0b5ed7; }
+        .header-controls .delete-btn { background: #dc3545; color: white; }
+        .header-controls .delete-btn:hover { background: #c82333; }
+        .edit-controls { display: Inline-block !important;}
+    </style>
+</head>
+<body>
+<nav>
+    <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'technical' %}">Technical</a></li>
+        <li><a href="{% url 'legistrative' %}">Legislative</a></li>
+         {% if user.is_staff %}
+            <li><a href="{% url 'bookings_list' %}">Bookings</a></li>
+        {% endif %}
+        <li><a href="{% url 'about' %}">About Us</a></li>
+    </ul>
+</nav>
+<div class="container">
+    {% if user.is_staff %}
+        <button id="toggleEditBtn" class="btn btn-warning" onclick="toggleEditMode()">
+            Enable Editing
+        </button>
+    {% endif %}
+    <h2>Technical Training Calendar</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <p style="color: green;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+    <div class="table-responsive">
+        <table class="calendar-table" border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Week
+                        {% if user.is_staff %}
+                            <div class="header-controls">
+                                <a href="{% url 'add_week' %}" class="edit-btn">Add</a>
+                            </div>
+                        {% endif %}
+                    </th>
+                    {% for instructor in instructors %}
+                        <th>{{ instructor.name }}
+                            {% if user.is_staff %}
+                                <div class="header-controls">
+                                    <a href="{% url 'edit_instructor' instructor.id %}" class="edit-btn">Edit</a>
+                                    <a href="{% url 'delete_instructor' instructor.id %}" class="delete-btn">Delete</a>
+                                </div>
+                            {% endif %}
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in calendar_rows %}
+                    <tr>
+                        <td class="week-col">
+                            {{ row.week.week_range }}
+                            {% if user.is_staff %}
+                                <div class="header-controls">
+                                    <a href="{% url 'edit_week' row.week.id %}" class="edit-btn">Edit</a>
+                                    <a href="{% url 'delete_week' row.week.id %}" class="delete-btn">Delete</a>
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% for item in row.cells %}
+                            {% if item.slot %}
+                                <td class="cell-slot {% if user.is_staff %}with-edit{% endif %}">
+                                    <span class="slot-title">{{ item.slot.training_title }}</span>
+                                    {% if item.slot.venue_info %}
+                                        <span class="sub-text">{{ item.slot.venue_info }}</span>
+                                    {% endif %}
+                                    <span class="sub-text">Seats left: {{ item.slot.seats_remaining }}/{{ item.slot.capacity }}</span>
+                                    <a class="book-link" href="{% url 'book_training' item.slot.id %}">Book this training</a>
+                                    {% if user.is_staff %}
+                                        <div class="edit-links">
+                                            <a href="{% url 'edit_slot' item.slot.id %}" class="edit-btn">Edit</a>
+                                            <a href="{% url 'delete_slot' item.slot.id %}" class="delete-btn">Delete</a>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            {% else %}
+                                <td class="cell-slot">
+                                    -
+                                    {% if user.is_staff %}
+                                        <div class="header-controls">
+                                            <a href="{% url 'add_slot' %}?week={{ row.week.id }}&instructor={{ item.instructor.id }}" class="add-btn">Add</a>
+                                        </div>
+                                    {% endif %}
+                            {% endif %}
+                                </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    function toggleEditMode() {
+        //Find all edit links and header controls
+        const editLinks = document.querySelectorAll('.edit-links');
+        const headerControls = document.querySelectorAll('.header-controls');
+        const weekEditDivs = document.querySelectorAll('td.week-col > div');
+        const button = document.getElementById('toggleEditBtn');
+
+        editLinks.forEach(element => {
+            const currentDisplay = window.getComputedStyle(element).display;
+            if (currentDisplay === 'none' || currentDisplay === '') {
+                element.style.setProperty('display', 'flex', 'important');
+            } else {
+                element.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        headerControls.forEach(element => {
+            const currentDisplay = window.getComputedStyle(element).display;
+            if (currentDisplay === 'none' || currentDisplay === '') {
+                element.style.setProperty('display', 'flex', 'important');
+            } else {
+                element.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        weekEditDivs.forEach(element => {
+            const currentDisplay = window.getComputedStyle(element).display;
+            if (currentDisplay === 'none' || currentDisplay === '') {
+                element.style.setProperty('display', 'flex', 'important');
+            } else {
+                element.style.setProperty('display', 'none', 'important');
+            }
+        });
+
+        //update the master button text dynamically
+        if (button.innerText.trim() === 'Enable Editing') {
+            button.innerText = 'Disable Editing';
+            button.classList.replace('btn-warning','btn-secondary');
+        } else {
+            button.innerText = 'Enable Editing';
+            button.classList.replace('btn-warning','btn-secondary');
+        }
+    }
+</script>
+</body>
+</html>

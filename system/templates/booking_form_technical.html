@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Training</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f8; }
+        .card { background: white; padding: 20px; border-radius: 8px; max-width: 600px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+        button { margin-top: 15px; padding: 10px 15px; background: #0d6efd; color: white; border: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Book Training Technical</h2>
+        <p><strong>Training:</strong> {{ slot.training_title }}</p>
+        <p><strong>Venue:</strong> {{ slot.venue_info }}</p>
+        <p><strong>Instructor:</strong> {{ slot.instructor.name }}</p>
+        <p><strong>Seats remaining:</strong> {{ slot.seats_remaining }}/{{ slot.capacity }}</p>
+        {% if is_full %}
+            <p style="color: #b91c1c;">No seats remaining for this training slot.</p>
+        {% endif %}
+        {% if slot.title_prerequisites %}
+            <section>
+                <h3>Prerequisites</h3>
+                <h4>Please ensure you meet the following prerequisites before booking:</h4>
+                <ul>
+                    {% for prerequisite in slot.title_prerequisites %}
+                        <li>{{ prerequisite }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+        <h3>Candidates Details</h3>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form.visible_fields %}
+                {% if field.name == 'phone_country_code' %}
+                    <div style="display: flex; gap: 10px; align-items: end; margin-top: 10px;">
+                        <div style="flex: 0 0 220px;">
+                            {{ field.label_tag }}
+                            {{ field }}
+                        </div>
+                {% elif field.name == 'phone' %}
+                        <div style="flex: 1;">
+                            {{ field.label_tag }}
+                            {{ field }}
+                        </div>
+                    </div>
+                {% else %}
+                    <div>
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small>{{ field.help_text }}</small>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <p style="color: #b91c1c;">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <button type="submit">Submit booking</button>
+        </form>
+    </div>
+</body>
+</html>

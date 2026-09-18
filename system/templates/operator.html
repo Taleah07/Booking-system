@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Operator Page</title>
+    <style>
+        nav ul { list-style: none; padding: 0; display: flex; gap: 15px; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f8; }
+        .card { background: white; padding: 20px; border-radius: 8px; max-width: 600px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+        button { margin-top: 15px; padding: 10px 15px; background: #0d6efd; color: white; border: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<nav>
+    <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'technical' %}">Technical</a></li>
+        <li><a href="{% url 'legislative' %}">Legislative</a></li>
+        <li><a href="{% url 'operator' %}">Operator</a></li>
+         {% if user.is_staff %}
+            <li><a href="{% url 'bookings_list' %}">Bookings</a></li>
+        {% endif %}
+        <li><a href="{% url 'contact' %}">Contact Us</a></li>
+    </ul>
+</nav>
+    <div class="card">
+        <a href="{% static 'pdf/help_guide_operator.pdf' %}" target="_blank" class="btn btn-info" style="margin-left: 10px;">Help Guide</a>
+        <h2>Book Operator Training</h2>
+        {% if messages %}
+            {% for message in messages %}
+                {% if forloop.first %}
+                    <p style="color: green;">{{ message }}</p>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+            <form method="post">
+            {% csrf_token %}
+            {% for field in form.visible_fields %}
+                <div>
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small>{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p style="color: #b91c1c;">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit">Submit booking</button>
+        </form>
+    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+        const locationSelect = document.getElementById("id_location");
+        const locationNameInput = document.getElementById("id_location_name");
+        
+        // Find the wrapper element to hide + input together
+        const locationNameContainer = locationNameInput.closest('p') || locationNameInput.closest('div') || locationNameInput.parentElement;
+
+        function toggleLocationNameField() {
+            if (locationSelect.value === 'Customer') {
+                locationNameContainer.style.display = 'block';
+            }else {
+                locationNameContainer.style.display = 'none';
+            }
+        }
+        if (locationSelect && locationNameContainer){
+            toggleLocationNameField();
+            locationSelect.addEventListener('change', toggleLocationNameField);
+        }
+    });
+</script>
+</body>
+</html>

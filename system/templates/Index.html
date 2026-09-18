@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>Home</title>
+<style>
+    nav ul { list-style: none; padding: 0; display: flex; gap: 15px; }
+</style>
+</head>
+<body>
+<nav>
+    <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'technical' %}">Technical</a></li>
+        <li><a href="{% url 'legislative' %}">Legislative</a></li>
+        <li><a href="{% url 'operator' %}">Operator</a></li>
+        {% if user.is_staff %}
+            <li><a href="{% url 'bookings_list' %}">Bookings</a></li>
+        {% endif %}
+        <li><a href="{% url 'contact' %}">Contact Us</a></li>
+    </ul>
+</nav>
+<h1>Welcome to Bell Equipment Technical Training</h1>    
+</body>
+</html>
